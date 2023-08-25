@@ -87,11 +87,13 @@ def load_artists():
         frequency_penalty=0,
         presence_penalty=0
     )
+    st.write(response.choices[0].message.content)
 
 def on_language_checkbox_change():
     pass
 
 def main():
+    st.write(os.environ)
     left, right = st.columns(2)
     with left:
         st.text_input('Identifier', key='profile_name')
