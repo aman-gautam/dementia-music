@@ -8,7 +8,7 @@ import datetime
 from services.spotify import get_top_tracks
 
 errors = {}
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAIAPIKEY")
 
 # mongo_uri = f"mongodb+srv://{os.environ['MONGO_USERNAME']}:{os.environ['MONGO_PASSWORD']}@{os.environ['MONGO_HOST']}"
 
