@@ -4,24 +4,22 @@ import time
 import os
 import openai
 import json
-import pymongo
 import datetime
-from pymongo.server_api import ServerApi
-from src.services.spotify import get_top_tracks
+from services.spotify import get_top_tracks
 
 errors = {}
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-mongo_uri = f"mongodb+srv://{os.environ['MONGO_USERNAME']}:{os.environ['MONGO_PASSWORD']}@{os.environ['MONGO_HOST']}"
+# mongo_uri = f"mongodb+srv://{os.environ['MONGO_USERNAME']}:{os.environ['MONGO_PASSWORD']}@{os.environ['MONGO_HOST']}"
 
-@st.cache_resource
-def init_db_connection():
-    return pymongo.MongoClient(
-         mongo_uri,
-         server_api=ServerApi('1')
-    )
+# @st.cache_resource
+# def init_db_connection():
+#     return pymongo.MongoClient(
+#          mongo_uri,
+#          server_api=ServerApi('1')
+#     )
 
-mongo_client = init_db_connection()
+# mongo_client = init_db_connection()
 
 
 
