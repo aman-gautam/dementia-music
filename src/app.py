@@ -137,6 +137,49 @@ def add_custom_language():
     st.session_state['profile_languages'].add(st.session_state['custom_language'])
     st.session_state['custom_language'] = ''
         
+def add_custom_genre():
+    if 'custom_genre' not in st.session_state:
+        return
+
+    if 'genres' not in st.session_state:
+        st.session_state['genres'] = []
+    
+    if 'profile_genres' not in st.session_state:
+        st.session_state['profile_genres'] = set()
+    
+    st.session_state['genres'].append(st.session_state['custom_genre'])
+    st.session_state['profile_genres'].add(st.session_state['custom_genre'])
+    st.session_state['custom_genre'] = ''
+
+def add_custom_artist():
+    if 'custom_artist' not in st.session_state:
+        return
+
+    if 'artists' not in st.session_state:
+        st.session_state['artists'] = []
+    
+    if 'profile_artists' not in st.session_state:
+        st.session_state['profile_artists'] = set()
+    
+    # find custom glp
+    custom_glp = list(filter(lambda x: x['glp'] == 'Custom', st.session_state['artists']))
+    if not custom_glp:
+        st.session_state['artists'].append({
+            'glp': 'Custom',
+            'artists': [
+                {
+                    'n': st.session_state['custom_artist'],
+                    'f': 2023 # placeholder
+                }
+            ]
+        })
+    else:
+        custom_glp['artists'].append({
+            'n': st.session_state['custom_artist'],
+            'f': 2023 # placeholder
+        })
+    st.session_state['profile_artists'].add(st.session_state['custom_artist'])
+    st.session_state['custom_artist'] = ''
 
 def main():
     # st.markdown('<h1 style="text-align:center; font-weight:400;">Setup Patient’s profile</h1>', unsafe_allow_html=True)
@@ -204,7 +247,7 @@ def main():
             with cols[-1]:
                 st.button('Get Suggested Languages', on_click=load_languages)
             with cols[0]:
-                if len(st.session_state.get('profile_languages', [])) > 0:
+                if len(st.session_state.get('profile_languages', [])) > 0 and st.session_state['step'] == 2:
                     st.button('Go to next step', on_click=next_step, type='primary')
         
         st.divider()
@@ -217,7 +260,14 @@ def main():
             f'Are there any languages from below that {st.session_state["profile_name"]} prefers listening\
             to in music? You can select from below or add a new one in case our predictions missed something. '
         )
-        st.button('Load Genres', on_click=load_genres)
+        # st.button('Load Genres', on_click=load_genres)
+        if 'genres' not in st.session_state:
+            st.text_input('Add Genre', key='custom_genre', on_change=add_custom_genre)
+            if 'genres' in errors:
+                st.error(errors['genres'])
+            cols = st.columns(3)
+            with cols[-1]:
+                st.button('Get Suggested Genres', on_click=load_genres, type='primary')
         if 'genres' in st.session_state:
             cols = st.columns(4)
             if 'profile_genres' not in st.session_state:
@@ -228,29 +278,61 @@ def main():
                         st.session_state['profile_genres'].add(genre)
                     elif genre in st.session_state['profile_genres']:
                         st.session_state['profile_genres'].remove(genre)
+            
+            if 'genres' in errors:
+                st.error(errors['genres'])
+
+            st.text_input('Did we miss some genre? Add it here.', key='custom_genre', on_change=add_custom_genre)
+
+            cols = st.columns(3)
+            with cols[-1]:
+                st.button('Get Local Genres', on_click=load_genres)
+            with cols[0]:
+                if len(st.session_state.get('profile_genres', [])) > 0 and st.session_state['step'] == 3:
+                    st.button('Go to next step', on_click=next_step, type='primary')
 
     if st.session_state.get('step', 1) > 3:
+        st.markdown(f"### Step 4 : Favorite Artists")
+
+        st.markdown(f'**Languages in which {st.session_state["profile_name"]} listens to music**')
+        st.markdown(
+            f'Are there any languages from below that {st.session_state["profile_name"]} prefers listening\
+            to in music? You can select from below or add a new one in case our predictions missed something. '
+        )
         st.button('Load Artists', on_click=load_artists)
     
 
-    if 'profile_artists' not in st.session_state:
-        st.session_state['profile_artists'] = set()
+        if 'profile_artists' not in st.session_state:
+            st.session_state['profile_artists'] = set()
 
-    if 'artists' in st.session_state:
-        all_artists = dict()
-        artists = st.session_state['artists']
-        for glp in artists:
-            _lang = glp['glp'].split('-')[-1]
-            for _artist in glp['artists']:
-                all_artists[_artist['n']] = _lang
-        cols = st.columns(3)
-        for (idx, key) in enumerate(all_artists):
-            with cols[idx % 3]:
-                _label = f"{key} ({all_artists[key]})"
-                if st.checkbox(_label) == True:
-                    st.session_state['profile_artists'].add(key)
-                elif key in st.session_state['profile_artists']:
-                    st.session_state['profile_artists'].remove(key)
+        if 'artists' not in st.session_state:
+            st.text_input('Add Artist', key='custom_artist', on_change=add_custom_artist)
+            if 'artists' in errors:
+                st.error(errors['artists'])
+            cols = st.columns(3)
+            with cols[-1]:
+                st.button('Get Suggested Artists', on_click=load_artists, type='primary')
+        if 'artists' in st.session_state:
+            all_artists = dict()
+            artists = st.session_state['artists']
+            for glp in artists:
+                _lang = glp['glp'].split('-')[-1]
+                for _artist in glp['artists']:
+                    all_artists[_artist['n']] = _lang
+            cols = st.columns(3)
+            for (idx, key) in enumerate(all_artists):
+                with cols[idx % 3]:
+                    _label = f"{key} ({all_artists[key]})"
+                    if st.checkbox(_label) == True:
+                        st.session_state['profile_artists'].add(key)
+                    elif key in st.session_state['profile_artists']:
+                        st.session_state['profile_artists'].remove(key)
+            
+            st.text_input('Did we miss some artist? Add it here.', key='custom_artist', on_change=add_custom_artist)
+
+            cols = st.columns(3)
+            with cols[-1]:
+                st.button('Get Local Artists', on_click=load_artists)
 
         # print(all_artists)
         # titles = map(lambda x: x['glp'], st.session_state['artists'])
@@ -270,7 +352,6 @@ def main():
     
     # st.write(get_all_states())
     
-
     # location = st.text_input('Location', key='location', on_change=show_filtered_results)
 
     # if st.session_state['location'] and len(st.session_state['location_results']) > 0:
