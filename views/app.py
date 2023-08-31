@@ -255,14 +255,18 @@ def load_music():
             time.sleep(0.2) # to avoid any throttle
     if show_snow:
         st.snow()
+        next_step()
 
-def main():
+def render():
+    st.set_page_config(layout='wide')
     # st.markdown('<h1 style="text-align:center; font-weight:400;">Setup Patient’s profile</h1>', unsafe_allow_html=True)
     st.header('Setup Profile')
     if 'step' in st.session_state:
-        st.progress(st.session_state['step'] * 20)
+        st.sidebar.markdown('Recommender Progress')
+        st.sidebar.progress(st.session_state['step'] * 20)
     else:
-        st.progress(20)
+        st.sidebar.markdown('Recommender Progress')
+        st.sidebar.progress(20)
 
     st.markdown("### Step 1 : Basic Information")
     st.markdown("**What is the Name of the patient?**")

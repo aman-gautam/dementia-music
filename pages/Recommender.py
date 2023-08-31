@@ -1,3 +1,3 @@
-from views.app import main
+from views.app import render
 
-main()
+render()
