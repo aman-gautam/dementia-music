@@ -150,14 +150,15 @@ def load_artists():
         temperature=0,
         max_tokens=3000,
         top_p=1,
-        frequency_penalty=1,
+        frequency_penalty=0,
         presence_penalty=0
     )
     # st.write(response.choices[0].message.content)
     try:
         st.session_state['artists'] = json.loads(response.choices[0].message.content)
-    except:
-        pass # TODO have better error handling
+    except Exception as err:
+        st.write(response.choices[0].message.content)
+        st.write(err)
 
 def on_language_checkbox_change():
     pass
@@ -331,10 +332,10 @@ def render():
     if st.session_state.get('step', 1) > 2:
         st.markdown(f"### Step 3 : Favorite Genres")
 
-        st.markdown(f'**Languages in which {st.session_state["profile_name"]} listens to music**')
+        st.markdown(f'**Genres that move {st.session_state["profile_name"]}**')
         st.markdown(
-            f'Are there any languages from below that {st.session_state["profile_name"]} prefers listening\
-            to in music? You can select from below or add a new one in case our predictions missed something. '
+            f'What are {st.session_state["profile_name"]}\'s favorite genres?\
+            You can click *Get Suggested Genres* to get some suggestions or add a new one manually in case our predictions missed something. '
         )
         # st.button('Load Genres', on_click=load_genres)
         if 'genres' not in st.session_state:
@@ -374,10 +375,9 @@ def render():
         st.divider()
         st.markdown(f"### Step 4 : Favorite Artists")
 
-        st.markdown(f'**Languages in which {st.session_state["profile_name"]} listens to music**')
+        st.markdown(f'**Who are the favorite artists of {st.session_state.get("profile_name", "the patient")}?**')
         st.markdown(
-            f'Are there any languages from below that {st.session_state["profile_name"]} prefers listening\
-            to in music? You can select from below or add a new one in case our predictions missed something. '
+            f'Knowing these artists will help us predict some songs which may have a deeper meaning for {st.session_state.get("profile_name", "the patient")}'
         )
         if 'profile_artists' not in st.session_state:
             st.session_state['profile_artists'] = set()
@@ -396,7 +396,8 @@ def render():
             for glp in artists:
                 _lang = glp['glp'].split('-')[-1]
                 for _artist in glp['artists']:
-                    all_artists[_artist['n']] = _lang
+                    if 'n' in _artist and _artist['n'] in all_artists:
+                        all_artists[_artist['n']] = _lang
             cols = st.columns(3)
             for (idx, key) in enumerate(all_artists):
                 with cols[idx % 3]:
