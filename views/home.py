@@ -79,4 +79,4 @@ def render():
 
     Every individual deserves a life filled with moments of joy, even in the face of dementia. With Life's Playlist, you're not just playing music – you're composing a symphony of memories, emotions, and connections. Join us in revolutionizing dementia care, one song at a time.
 
-    """)
+    """, unsafe_allow_html=True)
