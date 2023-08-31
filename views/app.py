@@ -194,10 +194,6 @@ def add_custom_genre():
     st.session_state['profile_genres'].add(st.session_state['custom_genre'])
     st.session_state['custom_genre'] = ''
 
-def add_top_tracks():
-    if 'playlist' not in st.session_state:
-        get_top_tracks()
-
 def add_custom_artist():
     if 'custom_artist' not in st.session_state:
         return
@@ -238,11 +234,12 @@ def load_music():
     for _location in _locations:
         for artist in st.session_state['profile_artists']:
             _tracks = get_top_tracks(artist, _location.get('country_code', 'US'))
+            print(json.dumps(_tracks, indent=2))
             _tracks_data = map(
                 lambda x: {
                     'name': x['name'],
                     'preview_url': x['preview_url'],
-                    'href': x['href'],
+                    'href': x['external_urls']['spotify'],
                     'artists': ','.join(list(map(
                         lambda y: y['name'],
                         x['artists']
@@ -304,7 +301,7 @@ def render():
             if 'languages' in errors:
                 st.error(errors['languages'])
             cols = st.columns(3)
-            with cols[-1]:
+            with cols[0]:
                 st.button('Get Suggested Languages', on_click=load_languages, type='primary')
         else:
             cols = st.columns(4)
@@ -323,9 +320,9 @@ def render():
             st.text_input('Did we miss some language? Add it here.', key='custom_language', on_change=add_custom_language)
 
             cols = st.columns(3)
-            with cols[-1]:
-                st.button('Get Suggested Languages', on_click=load_languages)
             with cols[0]:
+                st.button('Get Suggested Languages', on_click=load_languages)
+            with cols[-1]:
                 if len(st.session_state.get('profile_languages', [])) > 0 and st.session_state['step'] == 2:
                     st.button('Go to next step', on_click=next_step, type='primary')
         
@@ -345,7 +342,7 @@ def render():
             if 'genres' in errors:
                 st.error(errors['genres'])
             cols = st.columns(3)
-            with cols[-1]:
+            with cols[0]:
                 st.button('Get Suggested Genres', on_click=load_genres, type='primary')
         if 'genres' in st.session_state:
             cols = st.columns(4)
@@ -367,13 +364,14 @@ def render():
             st.text_input('Did we miss some genre? Add it here.', key='custom_genre', on_change=add_custom_genre)
 
             cols = st.columns(3)
-            with cols[-1]:
-                st.button('Get Suggested Genres', on_click=load_genres)
             with cols[0]:
+                st.button('Get Suggested Genres', on_click=load_genres)
+            with cols[-1]:
                 if len(st.session_state.get('profile_genres', [])) > 0 and st.session_state['step'] == 3:
                     st.button('Go to next step', on_click=next_step, type='primary')
 
     if st.session_state.get('step', 1) > 3:
+        st.divider()
         st.markdown(f"### Step 4 : Favorite Artists")
 
         st.markdown(f'**Languages in which {st.session_state["profile_name"]} listens to music**')
@@ -389,10 +387,9 @@ def render():
             if 'artists' in errors:
                 st.error(errors['artists'])
             cols = st.columns(3)
-            with cols[-2]:
-                st.markdown('WARNING: This can be a little slow 👉')
-            with cols[-1]:
+            with cols[0]:
                 st.button('Get Suggested Artists', on_click=load_artists, type='primary')
+                st.markdown('WARNING: This can be a little slow 👆')
         if 'artists' in st.session_state:
             all_artists = dict()
             artists = st.session_state['artists']
@@ -415,9 +412,9 @@ def render():
             st.text_input('Did we miss some artist? Add it here.', key='custom_artist', on_change=add_custom_artist)
 
             cols = st.columns(3)
-            with cols[-1]:
-                st.button('Get Suggested Artists', on_click=load_artists)
             with cols[0]:
+                st.button('Get Suggested Artists', on_click=load_artists)
+            with cols[2]:
                 st.button('Load Playlist Suggestions', on_click=load_music, type='primary')
 
         # print(all_artists)
@@ -435,30 +432,31 @@ def render():
         #                 elif _artist['n'] in st.session_state['profile_artists']:
         #                     st.session_state['profile_artists'].remove(_artist['n'])
 
-    st.divider()
-    if 'profile_tracks' in st.session_state and type(st.session_state['profile_tracks'] == list):
-        cols = st.columns([2, 3, 4, 1])
-        for (_idx, col) in enumerate(cols):
-            with col:
-                if _idx == 0:
-                    st.markdown('**Song**')
-                if _idx == 1:
-                    st.markdown('**Artists**')
-                if _idx == 2:
-                    st.markdown('**Preview**')
-                if _idx == 0:
-                    st.markdown('**Selected**')
-        for (_idx, _track) in enumerate(st.session_state['profile_tracks']):
-            cols = st.columns([0.2, 0.3, 0.4, 0.1])
-            with cols[0]:
-                st.markdown(_track['name'])
-            with cols[1]:
-                st.markdown(_track['artists'])
-            with cols[2]:
-                st.audio(_track['preview_url'])
-            with cols[3]:
-                st.checkbox(str(_idx), value=True)
-    
+    if st.session_state.get('step', 1) > 4:
+        st.divider()
+        if 'profile_tracks' in st.session_state and type(st.session_state['profile_tracks'] == list):
+            cols = st.columns([2, 3, 4, 1])
+            for (_idx, col) in enumerate(cols):
+                with col:
+                    if _idx == 0:
+                        st.markdown('**Song**')
+                    if _idx == 1:
+                        st.markdown('**Artists**')
+                    if _idx == 2:
+                        st.markdown('**Preview**')
+                    if _idx == 0:
+                        st.markdown('**Selected**')
+            for (_idx, _track) in enumerate(st.session_state['profile_tracks']):
+                cols = st.columns([0.2, 0.3, 0.4, 0.1])
+                with cols[0]:
+                    st.markdown(f'<a href="{_track["href"]}" target="_blank">{_track["name"]}</a>', unsafe_allow_html=True)
+                with cols[1]:
+                    st.markdown(_track['artists'])
+                with cols[2]:
+                    st.audio(_track['preview_url'])
+                with cols[3]:
+                    st.checkbox(str(_idx), value=True)
+        
     # st.button('Save Playlist', type='primary')
     # st.write(get_all_states())
     
