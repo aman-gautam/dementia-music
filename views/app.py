@@ -215,13 +215,14 @@ def load_music():
 
 def render_sidebar():
     if 'step' in st.session_state:
-        st.sidebar.markdown('Recommender Progress')
+        st.sidebar.markdown(f"Progress: Step {st.session_state.get('step', 1)} of 5")
         st.sidebar.progress(st.session_state['step'] * 20)
     else:
-        st.sidebar.markdown('Recommender Progress')
+        st.sidebar.markdown('Progress: Step 1 of 5')
         st.sidebar.progress(20)
 
 def render_basic_info():
+    st.divider()
     st.markdown("### Step 1 : Basic Information")
     st.markdown("**What is the Name of the patient?**")
     st.text_input(
