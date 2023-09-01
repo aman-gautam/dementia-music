@@ -153,7 +153,7 @@ def load_artists():
         frequency_penalty=0,
         presence_penalty=0
     )
-    # st.write(response.choices[0].message.content)
+    st.write(response.choices[0].message.content)
     try:
         st.session_state['artists'] = json.loads(response.choices[0].message.content)
     except Exception as err:
@@ -235,7 +235,7 @@ def load_music():
     for _location in _locations:
         for artist in st.session_state['profile_artists']:
             _tracks = get_top_tracks(artist, _location.get('country_code', 'US'))
-            print(json.dumps(_tracks, indent=2))
+            # print(json.dumps(_tracks, indent=2))
             _tracks_data = map(
                 lambda x: {
                     'name': x['name'],
@@ -396,9 +396,10 @@ def render():
             for glp in artists:
                 _lang = glp['glp'].split('-')[-1]
                 for _artist in glp['artists']:
-                    if 'n' in _artist and _artist['n'] in all_artists:
+                    if 'n' in _artist and _artist['n'] not in all_artists:
                         all_artists[_artist['n']] = _lang
             cols = st.columns(3)
+            # st.write(all_artists)
             for (idx, key) in enumerate(all_artists):
                 with cols[idx % 3]:
                     _label = f"{key} ({all_artists[key]})"
