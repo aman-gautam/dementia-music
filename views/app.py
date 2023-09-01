@@ -6,12 +6,15 @@ import datetime
 from services.spotify import get_top_tracks
 from services.locations import get_all_states, parse_location
 # from services.languages import load_languages, sort_languages
+import openai
+
+openai.api_key = os.getenv("OPENAIAPIKEY")
 
 errors = {}
 
 
 
-def load_languages(errors):
+def load_languages():
     if len(st.session_state['locations']) < 1:
         errors['languages'] = 'You need to select the locations before we can suggest you the languages'
     with st.spinner('Loading'):
@@ -252,8 +255,7 @@ def render_language_prefs():
 
         st.markdown(f'**Languages in which {st.session_state.get("profile_name", "the patient")} listens to music**')
         st.markdown(
-            f'Are there any languages from below that {st.session_state.get("profile_name", "the patient")} prefers listening\
-            to in music? You can select from below or add a new one in case our predictions missed something. '
+            f'Click on *Get Suggested Languages* to get a list of suggested languages. In case the language of choice is not there, you can add it manually.'
         )
         if 'languages' not in st.session_state:
             st.text_input('Add Language', key='custom_language', on_change=add_custom_language)
