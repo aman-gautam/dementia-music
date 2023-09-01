@@ -1,60 +1,17 @@
 import streamlit as st
-import pandas as pd
 import time
 import os
-import openai
 import json
 import datetime
 from services.spotify import get_top_tracks
+from services.locations import get_all_states, parse_location
+# from services.languages import load_languages, sort_languages
 
 errors = {}
-openai.api_key = os.getenv("OPENAIAPIKEY")
-
-# mongo_uri = f"mongodb+srv://{os.environ['MONGO_USERNAME']}:{os.environ['MONGO_PASSWORD']}@{os.environ['MONGO_HOST']}"
-
-# @st.cache_resource
-# def init_db_connection():
-#     return pymongo.MongoClient(
-#          mongo_uri,
-#          server_api=ServerApi('1')
-#     )
-
-# mongo_client = init_db_connection()
 
 
 
-def get_all_states():
-    df = pd.read_csv('data/all-states.csv')
-    return df.apply(lambda x: x['name'] + ' (' + x['country_name'] + ')', axis=1).to_list()
-    
-def find_country_code(country_name):
-    with open('data/country-codes.csv', 'r') as db:
-        while True:
-            line = db.readline()
-            if country_name in line:
-                values = line.split(',')
-                if values[0] == country_name:
-                    return values[1]
-            elif not line:
-                break
-
-def parse_location(location):
-    if not location:
-        return
-
-    start_idx = location.index('(')
-    end_idx = location.index(')')
-    state = location[0: start_idx].strip()
-    country = location[start_idx + 1: end_idx].strip()
-    country_code = find_country_code(country)
-    return {
-        'state': state,
-        'country': country,
-        'country_code': country_code
-    }
-
-
-def load_languages():
+def load_languages(errors):
     if len(st.session_state['locations']) < 1:
         errors['languages'] = 'You need to select the locations before we can suggest you the languages'
     with st.spinner('Loading'):
@@ -92,6 +49,7 @@ def sort_languages(languages):
         if language.get('language') not in _result:
             _result.append(language.get('language'))
     return _result
+
 
 def load_genres():
     locations = ', '.join(st.session_state['locations'])
@@ -255,10 +213,7 @@ def load_music():
         st.snow()
         next_step()
 
-def render():
-    st.set_page_config(layout='wide')
-    # st.markdown('<h1 style="text-align:center; font-weight:400;">Setup Patient’s profile</h1>', unsafe_allow_html=True)
-    st.header('Setup Profile')
+def render_sidebar():
     if 'step' in st.session_state:
         st.sidebar.markdown('Recommender Progress')
         st.sidebar.progress(st.session_state['step'] * 20)
@@ -266,6 +221,7 @@ def render():
         st.sidebar.markdown('Recommender Progress')
         st.sidebar.progress(20)
 
+def render_basic_info():
     st.markdown("### Step 1 : Basic Information")
     st.markdown("**What is the Name of the patient?**")
     st.text_input(
@@ -287,6 +243,7 @@ def render():
     if st.session_state.get('step', 1) == 1:
         st.button('Go to next step', on_click=next_step, type='primary')
 
+def render_language_prefs():
     st.divider()
 
     if st.session_state.get('step', 1) > 1:
@@ -329,6 +286,7 @@ def render():
         
         st.divider()
 
+def render_genre_prefs():
     if st.session_state.get('step', 1) > 2:
         st.markdown(f"### Step 3 : Favorite Genres")
 
@@ -371,6 +329,7 @@ def render():
                 if len(st.session_state.get('profile_genres', [])) > 0 and st.session_state['step'] == 3:
                     st.button('Go to next step', on_click=next_step, type='primary')
 
+def render_favorite_artists():
     if st.session_state.get('step', 1) > 3:
         st.divider()
         st.markdown(f"### Step 4 : Favorite Artists")
@@ -434,6 +393,7 @@ def render():
         #                 elif _artist['n'] in st.session_state['profile_artists']:
         #                     st.session_state['profile_artists'].remove(_artist['n'])
 
+def render_playlist():
     if st.session_state.get('step', 1) > 4:
         st.divider()
         if 'profile_tracks' in st.session_state and type(st.session_state['profile_tracks'] == list):
@@ -458,16 +418,14 @@ def render():
                     st.audio(_track['preview_url'])
                 with cols[3]:
                     st.checkbox(str(_idx), value=True)
-        
-    # st.button('Save Playlist', type='primary')
-    # st.write(get_all_states())
-    
-    # location = st.text_input('Location', key='location', on_change=show_filtered_results)
 
-    # if st.session_state['location'] and len(st.session_state['location_results']) > 0:
-    #     for (idx, result) in enumerate(st.session_state['location_results']):
-    #         if st.button(result):
-    #             if 'locations' not in st.session_state:
-    #                 st.session_state['locations'] = set([])
-    #             st.session_state['locations'].add(result)
-    # st.write(st.session_state)
+def render():
+    st.set_page_config(layout='wide')
+    st.header('Map The Journey')
+
+    render_sidebar()
+    render_basic_info()
+    render_language_prefs()
+    render_genre_prefs()
+    render_favorite_artists()
+    render_playlist()
