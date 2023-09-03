@@ -3,126 +3,29 @@ import time
 import os
 import json
 import datetime
-from services.spotify import get_top_tracks
 from services.locations import get_all_states, parse_location
-# from services.languages import load_languages, sort_languages
+from services.languages import load_languages, add_custom_language
+from services.genres import load_genres, add_custom_genre
+from services.artists import load_artists, add_custom_artist
+from services.music import load_music
 import openai
 
 openai.api_key = os.getenv("OPENAIAPIKEY")
 
 errors = {}
 
+def _load_languages():
+    return load_languages(errors)
 
+def _load_genres():
+    return load_genres(errors)
 
-def load_languages():
-    if len(st.session_state['locations']) < 1:
-        errors['languages'] = 'You need to select the locations before we can suggest you the languages'
-    with st.spinner('Loading'):
-        messages=[
-            {
-                "role": "system",
-                "content": "Your task is to list down all the major languages spoken in the given locations in the last 80 years. \n\n[step 1]\nFor each location include the top 5 local, regional, national, and international languages popularly spoken in the given locations.\n\n[step 2]\nInclude the estimated percentage of people who may speak the given language in the given locations. Do it for each of the locations.\n\n[Step 3]\nReturn the response in the following JSON format:\n\n[ \n  {\n    language: language_name, \n    population: 10%,\n    location: location_name\n  }\n ]\n\nPlease ensure that the response is strictly in the format shared above"
-            },
-            {
-                "role": "user",
-                "content": "Locations: " + ', '.join(st.session_state['locations'])
-            }
-        ]
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages = messages,
-            temperature = 0,
-            max_tokens = 512,
-            top_p = 1,
-            frequency_penalty = 0,
-            presence_penalty = 0
-        )
-        try:
-            original_list = json.loads(response.choices[0].message.content)
-            st.session_state['languages'] = sort_languages(original_list)
-            if 'languages' in errors:
-                del(errors['languages'])
-        except Exception as err:
-            st.write(err)
+def _load_artists():
+    return load_artists(errors)
 
-def sort_languages(languages):
-    languages.sort(key=lambda x: x['population'], reverse=True)
-    _result = []
-    for language in languages:
-        if language.get('language') not in _result:
-            _result.append(language.get('language'))
-    return _result
-
-
-def load_genres():
-    locations = ', '.join(st.session_state['locations'])
-    languages = ', '.join(st.session_state['profile_languages'])
-    age = st.session_state['profile_age']
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "system",
-                      "content": "Your task is to predict the top 15 music genres that a given person may like.\n\nYou will be provided details such as the age of the person, locations in which the person has lived, and the languages spoken by the person. \n\nInclude music genres that were famous in the specified years as well. \n\nYour response should be as a JSON in the following format\n\n[ \n    // list of genres\n ]"
-            },
-            {
-                "role": "user",
-                "content": f"""
-                    Locations: {locations}
-                    Age: {age} years
-                    Languages: {languages}
-                """
-            }
-        ],
-        temperature=0,
-        max_tokens=512,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
-    # st.write(response.choices[0].message.content)
-    if 'genres' in st.session_state and type(st.session_state.get('genres') == list):
-        st.session_state['genres'].extend(json.loads(response.choices[0].message.content))
-    else:
-        st.session_state['genres'] = json.loads(response.choices[0].message.content)
-    # try:
-        
-    # except Exception as err:
-    #     print(err)
-
-def load_artists():
-    yob = datetime.date.today().year - st.session_state['profile_age']
-    cut_off_year = yob + 50 if st.session_state['profile_age'] > 50 else st.session_state['profile_age']
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "system",
-                "content": "Your task is to predict some music artists that a given person may like.\n\nYou will be provided details such as genres of choice, the languages spoken by the person, and the cut-off year.\n\nHere is how you can find singers and music composers.\n\n[Step 1]: Create combinations of language and genres\n\n[Step 2]: For each language-genre pair, find up to  15 singers and composers who gave the maximum number of hit songs till the given year. Please ensure that you're considering artists from the start year till the cut-off year.\n\nFor each artist also include the year of their first major hit song.\n\nPrint the step 2 response in the following JSON format:\n\n[\n  {\n    \"glp\": \"genre-language-pair-name\",\n    \"artists\": [\n       { \"n\": \"name of the artist\", \"f\": year_of_first_hit}\n    ]\n  }\n]"
-            },
-            {
-                "role": "user",
-                "content": f"""Genres: {', '.join(st.session_state['profile_genres'])}
-                Languages: {', '.join(st.session_state['profile_languages'])}
-                Cut-Off Year: { cut_off_year }
-                Start Year: { yob - 30 }"""
-            }
-        ],
-        temperature=0,
-        max_tokens=3000,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
-    st.write(response.choices[0].message.content)
-    try:
-        st.session_state['artists'] = json.loads(response.choices[0].message.content)
-    except Exception as err:
-        st.write(response.choices[0].message.content)
-        st.write(err)
-
-def on_language_checkbox_change():
-    pass
+def _load_music():
+    music = load_music(errors)
+    next_step()
 
 def next_step():
     print('next step')
@@ -130,91 +33,6 @@ def next_step():
         st.session_state['step'] = 2
     else:
         st.session_state['step'] = st.session_state['step'] + 1
-
-def add_custom_language():
-    if 'languages' not in st.session_state:
-        st.session_state['languages'] = []
-    
-    if 'profile_languages' not in st.session_state:
-        st.session_state['profile_languages'] = set()
-    
-    st.session_state['languages'].append(st.session_state['custom_language'])
-    st.session_state['profile_languages'].add(st.session_state['custom_language'])
-    st.session_state['custom_language'] = ''
-        
-def add_custom_genre():
-    if 'custom_genre' not in st.session_state:
-        return
-
-    if 'genres' not in st.session_state:
-        st.session_state['genres'] = []
-    
-    if 'profile_genres' not in st.session_state:
-        st.session_state['profile_genres'] = set()
-    
-    st.session_state['genres'].append(st.session_state['custom_genre'])
-    st.session_state['profile_genres'].add(st.session_state['custom_genre'])
-    st.session_state['custom_genre'] = ''
-
-def add_custom_artist():
-    if 'custom_artist' not in st.session_state:
-        return
-
-    if 'artists' not in st.session_state:
-        st.session_state['artists'] = []
-    
-    if 'profile_artists' not in st.session_state:
-        st.session_state['profile_artists'] = set()
-    
-    # find custom glp
-    custom_glp = list(filter(lambda x: x['glp'] == 'Custom', st.session_state['artists']))
-    if not custom_glp:
-        st.session_state['artists'].append({
-            'glp': 'Custom',
-            'artists': [
-                {
-                    'n': st.session_state['custom_artist'],
-                    'f': 2023 # placeholder
-                }
-            ]
-        })
-    else:
-        custom_glp['artists'].append({
-            'n': st.session_state['custom_artist'],
-            'f': 2023 # placeholder
-        })
-    st.session_state['profile_artists'].add(st.session_state['custom_artist'])
-    st.session_state['custom_artist'] = ''
-
-def load_music():
-    show_snow = False
-    if 'profile_tracks' not in st.session_state:
-        show_snow = True
-    st.session_state['profile_tracks'] = []
-    st.session_state['tracks'] = []
-    _locations = map(lambda x: parse_location(x), st.session_state['locations'])
-    for _location in _locations:
-        for artist in st.session_state['profile_artists']:
-            _tracks = get_top_tracks(artist, _location.get('country_code', 'US'))
-            # print(json.dumps(_tracks, indent=2))
-            _tracks_data = map(
-                lambda x: {
-                    'name': x['name'],
-                    'preview_url': x['preview_url'],
-                    'href': x['external_urls']['spotify'],
-                    'artists': ','.join(list(map(
-                        lambda y: y['name'],
-                        x['artists']
-                    )))
-                },
-                _tracks
-            )
-            st.session_state['tracks'].extend(_tracks)
-            st.session_state['profile_tracks'].extend(_tracks_data)
-            time.sleep(0.2) # to avoid any throttle
-    if show_snow:
-        st.snow()
-        next_step()
 
 def render_sidebar():
     if 'step' in st.session_state:
@@ -263,7 +81,7 @@ def render_language_prefs():
                 st.error(errors['languages'])
             cols = st.columns(3)
             with cols[0]:
-                st.button('Get Suggested Languages', on_click=load_languages, type='primary')
+                st.button('Get Suggested Languages', on_click=_load_languages, type='primary')
         else:
             cols = st.columns(4)
             if 'profile_languages' not in st.session_state:
@@ -282,7 +100,7 @@ def render_language_prefs():
 
             cols = st.columns(3)
             with cols[0]:
-                st.button('Get Suggested Languages', on_click=load_languages)
+                st.button('Get Suggested Languages', on_click=_load_languages)
             with cols[-1]:
                 if len(st.session_state.get('profile_languages', [])) > 0 and st.session_state['step'] == 2:
                     st.button('Go to next step', on_click=next_step, type='primary')
@@ -305,7 +123,7 @@ def render_genre_prefs():
                 st.error(errors['genres'])
             cols = st.columns(3)
             with cols[0]:
-                st.button('Get Suggested Genres', on_click=load_genres, type='primary')
+                st.button('Get Suggested Genres', on_click=_load_genres, type='primary')
         if 'genres' in st.session_state:
             cols = st.columns(4)
             if 'profile_genres' not in st.session_state:
@@ -327,7 +145,7 @@ def render_genre_prefs():
 
             cols = st.columns(3)
             with cols[0]:
-                st.button('Get Suggested Genres', on_click=load_genres)
+                st.button('Get Suggested Genres', on_click=_load_genres)
             with cols[-1]:
                 if len(st.session_state.get('profile_genres', [])) > 0 and st.session_state['step'] == 3:
                     st.button('Go to next step', on_click=next_step, type='primary')
@@ -350,7 +168,7 @@ def render_favorite_artists():
                 st.error(errors['artists'])
             cols = st.columns(3)
             with cols[0]:
-                st.button('Get Suggested Artists', on_click=load_artists, type='primary')
+                st.button('Get Suggested Artists', on_click=_load_artists, type='primary')
                 st.markdown('WARNING: This can be a little slow 👆')
         if 'artists' in st.session_state:
             all_artists = dict()
@@ -377,9 +195,9 @@ def render_favorite_artists():
 
             cols = st.columns(3)
             with cols[0]:
-                st.button('Get Suggested Artists', on_click=load_artists)
+                st.button('Get Suggested Artists', on_click=_load_artists)
             with cols[2]:
-                st.button('Load Playlist Suggestions', on_click=load_music, type='primary')
+                st.button('Load Playlist Suggestions', on_click=_load_music, type='primary')
 
         # print(all_artists)
         # titles = map(lambda x: x['glp'], st.session_state['artists'])

@@ -23,7 +23,10 @@ def render():
         ## **About Life's Playlist**
 
         Life's Playlist is a revolutionary tool designed with the needs of professional caregivers and families of dementia patients in mind. Our platform combines cutting-edge technology with the timeless magic of music to create personalized experiences that uplift mood, ignite memories, and enhance the overall quality of life for patients and their families.
+    """)
 
+    st.video('https://youtu.be/oIGkoxzdvHw')
+    st.markdown("""
         ## **Key Features**
 
         ### ✅ Mapping Life's Journey Through Music

@@ -1,4 +1,6 @@
-
+import streamlit as st
+import json
+from services.llm import openai
 
 def load_languages(errors):
     if len(st.session_state['locations']) < 1:
@@ -38,3 +40,16 @@ def sort_languages(languages):
         if language.get('language') not in _result:
             _result.append(language.get('language'))
     return _result
+
+
+def add_custom_language():
+    if 'languages' not in st.session_state:
+        st.session_state['languages'] = []
+    
+    if 'profile_languages' not in st.session_state:
+        st.session_state['profile_languages'] = set()
+    
+    st.session_state['languages'].append(st.session_state['custom_language'])
+    st.session_state['profile_languages'].add(st.session_state['custom_language'])
+    st.session_state['custom_language'] = ''
+      
